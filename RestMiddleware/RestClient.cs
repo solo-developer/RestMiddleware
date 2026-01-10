@@ -347,7 +347,7 @@ namespace RestMiddleware.Src
 
         private bool IsUnauthorised(System.Net.Http.HttpResponseMessage responseMessage)
         {
-            return responseMessage.ReasonPhrase.Equals("Unauthorized") && responseMessage.Headers.WwwAuthenticate.Count > 0;
+            return responseMessage.StatusCode == System.Net.HttpStatusCode.Unauthorized;
         }
 
         private async Task<HttpResponseDto> GetResponseObject(System.Net.Http.HttpResponseMessage responseMessage, HttpRequestOptions options)

@@ -31,9 +31,43 @@ namespace TestNetCore31
                 options.UseResponseLayout(schemaPath, "users", "message");
             });
 
+            services.AddRestMiddleware("JSONPlaceholder", options =>
+            {
+                options.MethodToGetBaseUrl = () => "https://jsonplaceholder.typicode.com";
+                options.UseSimpleResponse();
+            });
+
             var serviceProvider = services.BuildServiceProvider();
 
-            // Resolve RestClient
+            // Resolve RestClientFactory
+            var factory = serviceProvider.GetRequiredService<IRestClientFactory>();
+            
+            // Resolve named clients
+            var dummyClient = factory.CreateClient(); // Default
+            var jsonClient = factory.CreateClient("JSONPlaceholder");
+
+            Console.WriteLine("--- Testing Named Clients ---");
+            try
+            {
+                var dummyResult = await dummyClient.GetList<UserDto>(new HttpRequestDto { endpoint = "/users" });
+                if (dummyResult.response.IsSuccess)
+                    Console.WriteLine($"[Default Client] DummyJSON Users: {dummyResult.datas.Count}");
+                else
+                    Console.WriteLine($"[Default Client] Failed with status: {dummyResult.response.StatusCode}");
+
+                var jsonResult = await jsonClient.GetList<PostDto>(new HttpRequestDto { endpoint = "/posts" });
+                if (jsonResult.response.IsSuccess)
+                    Console.WriteLine($"[JSONPlaceholder Client] Posts: {jsonResult.datas.Count}");
+                else
+                    Console.WriteLine($"[JSONPlaceholder Client] Failed with status: {jsonResult.response.StatusCode}");
+            }
+            catch (Exception ex) 
+            { 
+                Console.WriteLine($"Error resolving/using named clients: {ex.Message}"); 
+                Console.WriteLine(ex.StackTrace);
+            }
+
+            // Resolve RestClient (Default)
             var client = serviceProvider.GetRequiredService<RestClient>();
 
             Console.WriteLine("--- Testing GET List (Users) from ReqRes.in ---");
@@ -153,5 +187,11 @@ namespace TestNetCore31
         public string firstName { get; set; }
         public string lastName { get; set; }
         public string image { get; set; }
+    }
+
+    public class PostDto
+    {
+        public int id { get; set; }
+        public string title { get; set; }
     }
 }

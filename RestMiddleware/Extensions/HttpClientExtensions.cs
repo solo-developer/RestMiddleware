@@ -36,13 +36,22 @@ namespace RestMiddleware.Extensions
         }
         public static void AddTokenInHeader(HttpClient client, RestMiddleware.Dto.HttpRequestOptions options)
         {
-            if (!string.IsNullOrEmpty(options.MethodToGetToken()))
-                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + options.MethodToGetToken());
+            if (options.MethodToGetToken != null)
+            {
+                var token = options.MethodToGetToken();
+                if (!string.IsNullOrEmpty(token))
+                    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
+            }
         }
 
         public static void AddBaseUrl(HttpClient client, RestMiddleware.Dto.HttpRequestOptions options)
         {
-            client.BaseAddress = new Uri(options.MethodToGetBaseUrl());
+            if (options.MethodToGetBaseUrl != null)
+            {
+                var baseUrl = options.MethodToGetBaseUrl();
+                if (!string.IsNullOrEmpty(baseUrl))
+                    client.BaseAddress = new Uri(baseUrl);
+            }
         }
 
     }
