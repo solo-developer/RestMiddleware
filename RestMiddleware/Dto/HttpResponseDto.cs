@@ -10,9 +10,16 @@ namespace RestMiddleware.Dto
         public List<string> Errors { get; set; } = new List<string>();
 
         public JObject InfoDetail { get; set; }
-        public bool IsSuccess { get => StatusCode == 200; }
+        public bool IsSuccess { get => StatusCode >= 200 && StatusCode <= 299; }
         public bool IsError { get => StatusCode == 400; }
 
         public bool IsInfo { get => !IsSuccess && !IsError; }
+        
+        public HttpResponseDto()
+        {
+            Headers = new Dictionary<string, IEnumerable<string>>(System.StringComparer.OrdinalIgnoreCase);
+        }
+
+        public Dictionary<string, IEnumerable<string>> Headers { get; set; }
     }
 }

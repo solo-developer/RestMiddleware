@@ -6,17 +6,11 @@ namespace RestMiddleware
 {
     public class HttpClientHelper
     {
-        public static HttpClient GetHttpClient(RestMiddleware.Dto.HttpRequestOptions options)
+        public static void ConfigureHttpClient(HttpClient client, RestMiddleware.Dto.HttpRequestOptions options)
         {
-            var client = new HttpClient() { Timeout = TimeSpan.FromMinutes(3) };
+            client.Timeout = TimeSpan.FromMinutes(3);
+            client.DefaultRequestHeaders.Add("User-Agent", "RestMiddleware-TestClient/1.0");
             client.AddTokenAndBaseUrl(options);
-            return client;
-            //var httpClientHandler = new HttpClientHandler();
-
-            //httpClientHandler.ServerCertificateCustomValidationCallback =
-            //(message, cert, chain, errors) => { return true; };
-
-            //return new HttpClient(httpClientHandler);
         }
     }
 }

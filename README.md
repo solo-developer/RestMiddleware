@@ -1,7 +1,9 @@
 # RestMiddleware  
-*A lightweight, generic HTTP abstraction layer for building .NET repository layers.*
+*A lightweight, generic HTTP client wrapper for building .NET repository layers.*
 
-RestMiddleware is a simple but powerful helper library that eliminates repetitive `HttpClient` boilerplate. It provides a generic `HttpMiddleware<T>` base class that your repositories can inherit from to perform consistent, strongly-typed HTTP network calls with minimal code.
+RestMiddleware is a simple but powerful helper library that eliminates repetitive `HttpClient` boilerplate. It provides a `RestClient` helper class that uses `IHttpClientFactory` to perform consistent, strongly-typed HTTP network calls with minimal code.
+
+**Compatible with:** .NET Standard 2.0 (.NET Framework 4.6.1+, .NET Core 2.0+, .NET 5/6/7+)
 
 ---
 
@@ -11,107 +13,83 @@ RestMiddleware is a simple but powerful helper library that eliminates repetitiv
 - 📦 Strongly typed responses (`T`, `List<T>`)  
 - 🔄 Unified response structure  
 - 🧽 Centralized error handling  
-- 🧱 Zero dependency, lightweight  
+- 🧱 Uses `IHttpClientFactory` for efficient connection pooling  
 - ♻️ Highly reusable across repositories  
-- 💡 Clean, readable architecture  
+- 💡 Clean, readable architecture (Composition over Inheritance)
+- 🌍 Global configuration support (Startup.cs or Global.asax)
 
 ---
 
-## 📚 How It Works
+## 📚 Installation
 
-Inherit from:
+Install the NuGet package:
 
-```csharp
-public class LeaveRepository : HttpMiddleware<LeaveListResponseDto>
+```bash
+dotnet add package RestMiddleware
 ```
 
-Your repository will automatically have these methods available:
+---
 
-- `GetSingleItem()`
-- `GetList()`
-- `Post()`
-- `Put()`
-- `DeleteItem()`
+## 🚀 Initialization
 
-Each request is defined using:
+### Option 1: .NET Core / .NET 5+ (Dependency Injection)
+
+In `Startup.cs` or `Program.cs`:
 
 ```csharp
-public class HttpRequestDto
+using RestMiddleware.Extensions;
+
+services.AddRestMiddleware(options => 
 {
-    public string endpoint { get; set; }
-    public object? data { get; set; }
-    public string? query { get; set; }
-    public Dictionary<string, string>? headers { get; set; }
+    options.MethodToGetBaseUrl = () => "https://api.myapp.com";
+    options.MethodToGetToken = () => GetUserToken(); // Delegate to get token
+    options.FetchRefreshTokenIfUnauthorised = true;
+});
+```
+
+### Option 2: Legacy .NET Framework (Global.asax)
+
+In `Global.asax.cs`:
+
+```csharp
+using RestMiddleware;
+
+protected void Application_Start()
+{
+    GlobalConfiguration.Options.MethodToGetBaseUrl = () => "https://api.myapp.com";
+    GlobalConfiguration.Options.MethodToGetToken = () => HttpContext.Current.Session["Token"]?.ToString();
 }
 ```
 
 ---
 
-## 🚀 Usage Example
+## 🛠 Usage in Repository
 
-### Example Repository
+Inject `RestClient` into your repository:
 
 ```csharp
-public class LeaveRepository 
-    : HttpMiddleware<LeaveListResponseDto>, ILeaveRepository
+public class LeaveRepository : ILeaveRepository
 {
-    public async Task Delete(int id)
+    private readonly RestClient _client;
+
+    public LeaveRepository(RestClient client)
     {
-        await DeleteItem(new HttpRequestDto()
-        {
-            endpoint = Constants.DeleteLeaveUrl,
-            query = $"id={id}"
-        });
+        _client = client;
     }
 
-    public async Task<LeaveListResponseDto> GetLeaveOfLoggedInUser()
+    public async Task<LeaveListResponseDto> GetLeaves()
     {
-        var result = await GetSingleItem(new HttpRequestDto()
+        // Global options (Base URL, Token) are automatically applied!
+        // You only need to specify the endpoint/data.
+        var result = await _client.GetSingleItem<LeaveListResponseDto>(new HttpRequestDto()
         {
-            endpoint = Constants.MyLeaveUrl
+            endpoint = "/api/leaves" 
         });
 
         if (result.response.IsSuccess)
             return result.data;
-
-        if (result.response.IsError)
-            throw new Exception("Failed to get vacation detail.");
-
-        var info = result.response.InfoDetail.ToObject<InfoResponseDto>();
-        throw new CustomException(info.description);
-    }
-
-    public async Task<List<LeaveTransferOptionDto>> GetTransferOptions()
-    {
-        var result = await HttpMiddleware<LeaveTransferOptionDto>.GetList(
-            new HttpRequestDto { endpoint = Constants.LeaveTransferOptionsUrl });
-
-        if (result.response.IsSuccess)
-            return result.datas;
-
-        if (result.response.IsError)
-            throw new Exception("Failed to get transfer options.");
-
-        var info = result.response.InfoDetail.ToObject<InfoResponseDto>();
-        throw new CustomException(info.description);
-    }
-
-    public async Task Save(AddLeaveDto dto)
-    {
-        var result = await Post(new HttpRequestDto()
-        {
-            data = dto,
-            endpoint = Constants.SaveLeaveUrl
-        });
-
-        if (result.IsSuccess)
-            return;
-
-        if (result.IsError)
-            throw new Exception("Failed to save vacation detail.");
-
-        var info = result.InfoDetail.ToObject<InfoResponseDto>();
-        throw new CustomException(info.description);
+        
+        throw new Exception("Error fetching leaves");
     }
 }
 ```
@@ -122,21 +100,11 @@ public class LeaveRepository
 
 | Method | Description |
 |--------|-------------|
-| `GetSingleItem(dto)` | GET a single object of type `T` |
-| `GetList(dto)` | GET a list of `T` |
-| `Post(dto)` | POST JSON body |
-| `Put(dto)` | PUT JSON body |
+| `GetSingleItem<T>(dto)` | GET a single object of type `T` |
+| `GetList<T>(dto)` | GET a list of `T` |
+| `Post(dto)` | POST JSON body (no return data) |
+| `PostAndGetObject<T>(dto)` | POST and return `T` |
 | `DeleteItem(dto)` | DELETE request |
-
----
-
-## 🧱 Why Use RestMiddleware?
-
-- ✨ Cleaner repository code  
-- 🔄 No repeated HttpClient logic  
-- 🔗 Strongly typed everywhere  
-- 🛠️ Ideal for Clean Architecture, MVVM, DDD  
-- 💡 Encapsulates networking concerns  
 
 ---
 
