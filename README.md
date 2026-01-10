@@ -77,6 +77,46 @@ public class MyService
 }
 ```
 
+### 🧩 Response Parsing Strategies
+
+There are two main ways to tell the library how to extract data and errors from your API responses:
+
+#### Option A: Schema-Based (Standard Envelopes)
+Best when your API wraps results in a standard structure (e.g., `{ "status": "ok", "result": { ... }, "errors": [] }`).
+
+You provide a **sample JSON file** and the **keys** to navigate.
+- **Support for nested keys**: Use `>` to go deep (e.g., `data>items`).
+- **Automatic Deduction**: The library analyzes the sample file to learn how to parse error lists.
+
+```csharp
+options.UseResponseLayout(
+    sampleJsonPath: "api_sample.json", 
+    dataKey: "result>payload", 
+    errorKey: "errors"
+);
+```
+
+#### Option B: Function-Based (Custom Logic)
+Best for maximum flexibility or when you want to handle parsing manually without a schema file.
+
+```csharp
+options.ParseSuccess = (json, type) => {
+    // Custom logic to extract and deserialize data (e.g. using JObject)
+    return myCustomDeserializer(json, type);
+};
+
+options.ParseErrors = (json) => {
+    // Custom logic to extract error messages as string[]
+    return new string[] { "Something failed" };
+};
+```
+
+#### Quick Start: Simple Response
+If your API returns the object/array directly (no wrapper), use:
+```csharp
+options.UseSimpleResponse();
+```
+
 ---
 
 ## 🧪 Configuration Options
@@ -85,29 +125,13 @@ public class MyService
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `MethodToGetBaseUrl` | `Func<string>` | Required. Returns the Base URL for the client. |
+| `MethodToGetBaseUrl` | `Func<string>` | **Required**. Returns the Base URL for the client. |
 | `MethodToGetToken` | `Func<string>` | Optional. Returns the Bearer token for authorization. |
 | `FetchRefreshTokenIfUnauthorised` | `bool` | If true, attempts to refresh token on 401. |
 | `MethodToGetRefreshTokenEndpoint` | `Func<string>` | Endpoint to call for refreshing tokens. |
 | `MethodToSetTokenLocally` | `Action<object>` | Callback to save the new token received. |
-| `ParseSuccess` | `Func<string, Type, object>` | Advanced: Override how success JSON is parsed. |
-| `ParseErrors` | `Func<string, string[]>` | Advanced: Override how error JSON is parsed. |
-
-### Helper Extensions
-
-#### 1. `UseSimpleResponse()`
-Use this for standard APIs where the response body is directly the data or a direct error object.
-```csharp
-options.UseSimpleResponse();
-```
-
-#### 2. `UseResponseLayout()`
-Use this when your API wraps results in a standard envelope (e.g., `{ "data": { ... }, "errors": [...] }`). **Supports navigation using `>`**.
-```csharp
-// Path: sample.json
-// Response: { "result": { "payload": { "users": [...] } } }
-options.UseResponseLayout("sample.json", "result>payload>users", "errors");
-```
+| `ParseSuccess` | `Func<string, Type, object>` | The function responsible for parsing success JSON. |
+| `ParseErrors` | `Func<string, string[]>` | The function responsible for parsing error JSON. |
 
 ---
 
