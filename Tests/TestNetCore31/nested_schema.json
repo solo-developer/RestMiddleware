@@ -1,0 +1,18 @@
+{
+    "status": "success",
+    "result": {
+        "payload": {
+            "items": [
+                {
+                    "id": 1,
+                    "name": "Nested Item 1"
+                }
+            ]
+        }
+    },
+    "errors": {
+        "details": [
+            "Nested error 1"
+        ]
+    }
+}

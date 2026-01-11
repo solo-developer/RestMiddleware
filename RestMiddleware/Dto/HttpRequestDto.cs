@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System.Collections.Generic;
+using System.Net.Http;
 
 namespace RestMiddleware.Dto
 {
@@ -9,7 +10,8 @@ namespace RestMiddleware.Dto
         public FormUrlEncodedContent content { get; set; }
 
         public object data { get; set; }
-
+        
+        public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
     }
 
     public class HttpRequestBaseDto
@@ -19,6 +21,7 @@ namespace RestMiddleware.Dto
             Options = new HttpRequestOptions();
         }
         public HttpRequestOptions Options { get; set; }
+        public System.Threading.CancellationToken CancellationToken { get; set; } = System.Threading.CancellationToken.None;
 
     }
 }
