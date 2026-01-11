@@ -131,6 +131,10 @@ options.UseSimpleResponse();
 | `MethodToGetTokenAsync` | `Func<Task<string>>` | **Preferred**. Async version to retrieve Bearer token. |
 | `FetchRefreshTokenIfUnauthorised` | `bool` | If true, attempts to refresh token on 401. |
 | `MethodToGetRefreshTokenEndpoint` | `Func<string>` | Endpoint to call for refreshing tokens. |
+| `MethodToGetRefreshToken` | `Func<string>` | Optional. Returns the refresh token (if distinctive). |
+| `AccessTokenParameterName` | `string` | JSON key for access token (default: "jwt_token"). |
+| `RefreshTokenParameterName` | `string` | JSON key for refresh token (default: "refresh_token"). |
+| `CreateCustomRefreshRequestBody` | `Func<object>` | **Advanced**. Return any object to fully customize the refresh body. |
 | `MethodToSetTokenLocally` | `Action<object>` | Callback to save the new token (sync). |
 | `MethodToSetTokenLocallyAsync` | `Func<object, Task>` | **Preferred**. Async callback to save new token. |
 | `ParseSuccess` | `Func<string, Type, object>` | The function responsible for parsing success JSON. |
@@ -184,6 +188,13 @@ services.AddRestMiddleware(options =>
     // 2. Enable auto-refresh on 401
     options.FetchRefreshTokenIfUnauthorised = true;
     options.MethodToGetRefreshTokenEndpoint = () => "/api/auth/refresh";
+    
+    // Optional: Customize payload keys (Defaults: "jwt_token", "refresh_token")
+    options.AccessTokenParameterName = "expiredToken"; 
+    options.RefreshTokenParameterName = "refreshToken";
+    
+    // Optional: Provide the separate refresh token just for this call
+    options.MethodToGetRefreshToken = () => MySecureStorage.GetRefreshToken();
 
     // 3. Tell the library how to SAVE the new token after refresh
     options.MethodToSetTokenLocallyAsync = async (tokenResponse) => {

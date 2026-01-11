@@ -10,6 +10,11 @@ namespace RestMiddleware.Dto
         public Func<System.Threading.Tasks.Task<string>> MethodToGetBaseUrlAsync { get; set; }
         public Func<string> MethodToGetRefreshTokenEndpoint { get; set; }
 
+        public Func<string> MethodToGetRefreshToken { get; set; }
+        public Func<object> CreateCustomRefreshRequestBody { get; set; }
+        public string RefreshTokenParameterName { get; set; } = "refresh_token";
+        public string AccessTokenParameterName { get; set; } = "jwt_token";
+
         public bool FetchRefreshTokenIfUnauthorised { get; set; }
 
         public Action<object> MethodToSetTokenLocally { get; set; }

@@ -28,6 +28,14 @@ namespace RestMiddleware.Src
             if (requestOptions.MethodToSetTokenLocally == null) requestOptions.MethodToSetTokenLocally = _globalOptions.MethodToSetTokenLocally;
             if (requestOptions.MethodToSetTokenLocallyAsync == null) requestOptions.MethodToSetTokenLocallyAsync = _globalOptions.MethodToSetTokenLocallyAsync;
             
+            if (requestOptions.MethodToGetRefreshToken == null) requestOptions.MethodToGetRefreshToken = _globalOptions.MethodToGetRefreshToken;
+            if (requestOptions.CreateCustomRefreshRequestBody == null) requestOptions.CreateCustomRefreshRequestBody = _globalOptions.CreateCustomRefreshRequestBody;
+            // Use global default names if local are default
+            if (requestOptions.RefreshTokenParameterName == "refresh_token" && _globalOptions.RefreshTokenParameterName != "refresh_token")
+                requestOptions.RefreshTokenParameterName = _globalOptions.RefreshTokenParameterName;
+            if (requestOptions.AccessTokenParameterName == "jwt_token" && _globalOptions.AccessTokenParameterName != "jwt_token")
+                requestOptions.AccessTokenParameterName = _globalOptions.AccessTokenParameterName;
+
             // Parsers
             if (requestOptions.ParseSuccess == null) requestOptions.ParseSuccess = _globalOptions.ParseSuccess;
             if (requestOptions.ParseErrors == null) requestOptions.ParseErrors = _globalOptions.ParseErrors;
@@ -330,14 +338,30 @@ namespace RestMiddleware.Src
             System.Net.Http.HttpResponseMessage responseMessage = new System.Net.Http.HttpResponseMessage();
             using (var client = await CreateClientAsync(dto.Options))
             {
-                string jwt_token = null;
-                if (dto.Options.MethodToGetTokenAsync != null) jwt_token = await dto.Options.MethodToGetTokenAsync();
-                else if (dto.Options.MethodToGetToken != null) jwt_token = dto.Options.MethodToGetToken();
+                object body = null;
 
-                responseMessage = await client.PostAsJsonAsync(dto.Options.MethodToGetRefreshTokenEndpoint(), new
+                if (dto.Options.CreateCustomRefreshRequestBody != null)
                 {
-                    jwt_token = jwt_token
-                }, dto.CancellationToken);
+                    body = dto.Options.CreateCustomRefreshRequestBody();
+                }
+                else
+                {
+                    string jwt_token = null;
+                    if (dto.Options.MethodToGetTokenAsync != null) jwt_token = await dto.Options.MethodToGetTokenAsync();
+                    else if (dto.Options.MethodToGetToken != null) jwt_token = dto.Options.MethodToGetToken();
+
+                    var payload = new Dictionary<string, string>();
+                    if (!string.IsNullOrEmpty(dto.Options.AccessTokenParameterName))
+                        payload.Add(dto.Options.AccessTokenParameterName, jwt_token);
+
+                    if (dto.Options.MethodToGetRefreshToken != null && !string.IsNullOrEmpty(dto.Options.RefreshTokenParameterName))
+                    {
+                        payload.Add(dto.Options.RefreshTokenParameterName, dto.Options.MethodToGetRefreshToken());
+                    }
+                    body = payload;
+                }
+
+                responseMessage = await client.PostAsJsonAsync(dto.Options.MethodToGetRefreshTokenEndpoint(), body, dto.CancellationToken);
 
                 if (responseMessage.IsSuccessStatusCode)
                 {
