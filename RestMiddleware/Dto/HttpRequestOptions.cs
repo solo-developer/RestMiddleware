@@ -5,12 +5,15 @@ namespace RestMiddleware.Dto
     public class HttpRequestOptions
     {
         public Func<string> MethodToGetToken { get; set; }
+        public Func<System.Threading.Tasks.Task<string>> MethodToGetTokenAsync { get; set; }
         public Func<string> MethodToGetBaseUrl { get; set; }
+        public Func<System.Threading.Tasks.Task<string>> MethodToGetBaseUrlAsync { get; set; }
         public Func<string> MethodToGetRefreshTokenEndpoint { get; set; }
 
         public bool FetchRefreshTokenIfUnauthorised { get; set; }
 
         public Action<object> MethodToSetTokenLocally { get; set; }
+        public Func<object, System.Threading.Tasks.Task> MethodToSetTokenLocallyAsync { get; set; }
 
         /// <summary>
         /// Custom parser for success responses. 

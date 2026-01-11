@@ -125,11 +125,14 @@ options.UseSimpleResponse();
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `MethodToGetBaseUrl` | `Func<string>` | **Required**. Returns the Base URL for the client. |
-| `MethodToGetToken` | `Func<string>` | Optional. Returns the Bearer token for authorization. |
+| `MethodToGetBaseUrl` | `Func<string>` | Returns the Base URL for the client (sync). |
+| `MethodToGetBaseUrlAsync` | `Func<Task<string>>` | **Preferred**. Async version to retrieve Base URL. |
+| `MethodToGetToken` | `Func<string>` | Returns the Bearer token for authorization (sync). |
+| `MethodToGetTokenAsync` | `Func<Task<string>>` | **Preferred**. Async version to retrieve Bearer token. |
 | `FetchRefreshTokenIfUnauthorised` | `bool` | If true, attempts to refresh token on 401. |
 | `MethodToGetRefreshTokenEndpoint` | `Func<string>` | Endpoint to call for refreshing tokens. |
-| `MethodToSetTokenLocally` | `Action<object>` | Callback to save the new token received. |
+| `MethodToSetTokenLocally` | `Action<object>` | Callback to save the new token (sync). |
+| `MethodToSetTokenLocallyAsync` | `Func<object, Task>` | **Preferred**. Async callback to save new token. |
 | `ParseSuccess` | `Func<string, Type, object>` | The function responsible for parsing success JSON. |
 | `ParseErrors` | `Func<string, string[]>` | The function responsible for parsing error JSON. |
 
@@ -141,18 +144,59 @@ options.UseSimpleResponse();
 The library returns a tuple: `(T data, HttpResponseDto response)`.
 
 ```csharp
-// POST request with body
+// POST request with body and CancellationToken
 var (user, response) = await _client.PostAndGetObject<UserDto>(new HttpRequestDto()
 {
     endpoint = "/users",
     data = new { name = "John" },
-    Headers = new Dictionary<string, string> { { "X-Priority", "High" } }
+    CancellationToken = myCancellationToken
 });
-
-if (response.IsSuccess) {
-    Console.WriteLine(user.Id);
-}
 ```
+
+### Async Token Retrieval Example
+```csharp
+options.MethodToGetTokenAsync = async () => {
+    var token = await _secureStorage.GetAsync("token");
+    return token;
+};
+```
+
+---
+
+## 🔐 Automated Auth Workflow
+
+One of the most powerful features of `RestMiddleware` is the automated token refresh. When a request fails with a `401 Unauthorized`, the library can automatically refresh the token and retry the original request.
+
+### Example Implementation
+
+Here is a mock implementation showing how to configure a fully automated auth loop:
+
+```csharp
+services.AddRestMiddleware(options => 
+{
+    options.MethodToGetBaseUrl = () => "https://api.myapp.com";
+
+    // 1. Tell the library how to fetch the CURRENT token asynchronously
+    options.MethodToGetTokenAsync = async () => {
+        return await MySecureStorage.GetTokenAsync();
+    };
+
+    // 2. Enable auto-refresh on 401
+    options.FetchRefreshTokenIfUnauthorised = true;
+    options.MethodToGetRefreshTokenEndpoint = () => "/api/auth/refresh";
+
+    // 3. Tell the library how to SAVE the new token after refresh
+    options.MethodToSetTokenLocallyAsync = async (tokenResponse) => {
+        // 'tokenResponse' is the object returned by your refresh endpoint
+        var newToken = ((dynamic)tokenResponse).access_token;
+        await MySecureStorage.SaveTokenAsync(newToken);
+    };
+});
+```
+
+With this configuration, your repositories don't need to worry about expiration. `RestClient` will handle the "Expire -> Refresh -> Retry" cycle silently in the background.
+
+---
 
 ### Accessing Response Headers
 ```csharp

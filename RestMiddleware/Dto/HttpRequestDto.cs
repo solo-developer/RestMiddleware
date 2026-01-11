@@ -21,6 +21,7 @@ namespace RestMiddleware.Dto
             Options = new HttpRequestOptions();
         }
         public HttpRequestOptions Options { get; set; }
+        public System.Threading.CancellationToken CancellationToken { get; set; } = System.Threading.CancellationToken.None;
 
     }
 }

@@ -26,6 +26,7 @@ namespace RestMiddleware.Src
             if (requestOptions.MethodToGetBaseUrl == null) requestOptions.MethodToGetBaseUrl = _globalOptions.MethodToGetBaseUrl;
             if (requestOptions.MethodToGetRefreshTokenEndpoint == null) requestOptions.MethodToGetRefreshTokenEndpoint = _globalOptions.MethodToGetRefreshTokenEndpoint;
             if (requestOptions.MethodToSetTokenLocally == null) requestOptions.MethodToSetTokenLocally = _globalOptions.MethodToSetTokenLocally;
+            if (requestOptions.MethodToSetTokenLocallyAsync == null) requestOptions.MethodToSetTokenLocallyAsync = _globalOptions.MethodToSetTokenLocallyAsync;
             
             // Parsers
             if (requestOptions.ParseSuccess == null) requestOptions.ParseSuccess = _globalOptions.ParseSuccess;
@@ -43,16 +44,16 @@ namespace RestMiddleware.Src
         {
             MergeOptions(dto.Options);
         up:;
-            using (var client = CreateClient(dto.Options))
+            using (var client = await CreateClientAsync(dto.Options))
             {
                 AddJsonAsContentType(client);
                 AddRequestHeaders(client, dto.Headers);
-                System.Net.Http.HttpResponseMessage responseMessage = await client.PostAsJsonAsync(dto.endpoint, dto.data);
+                System.Net.Http.HttpResponseMessage responseMessage = await client.PostAsJsonAsync(dto.endpoint, dto.data, dto.CancellationToken);
 
                 if (dto.Options.FetchRefreshTokenIfUnauthorised && IsUnauthorised(responseMessage))
                 {
-                    var user = await GetJwtTokenUsingRefreshToken(dto);
-                    dto.Options.MethodToSetTokenLocally(user);
+                    var tokenObj = await GetJwtTokenUsingRefreshToken(dto);
+                    await SetToken(dto.Options, tokenObj);
                     goto up;
                 }
                 var response = await GetResponseObject(responseMessage, dto.Options);
@@ -65,15 +66,15 @@ namespace RestMiddleware.Src
         {
             MergeOptions(dto.Options);
         up:;
-            using (var client = CreateClient(dto.Options))
+            using (var client = await CreateClientAsync(dto.Options))
             {
                 AddJsonAsContentType(client);
                 AddRequestHeaders(client, dto.Headers);
-                System.Net.Http.HttpResponseMessage responseMessage = await client.PostAsJsonAsync(dto.endpoint, dto.data);
-                if (IsUnauthorised(responseMessage))
+                System.Net.Http.HttpResponseMessage responseMessage = await client.PostAsJsonAsync(dto.endpoint, dto.data, dto.CancellationToken);
+                if (dto.Options.FetchRefreshTokenIfUnauthorised && IsUnauthorised(responseMessage))
                 {
-                    var user = await GetJwtTokenUsingRefreshToken(dto);
-                    dto.Options.MethodToSetTokenLocally(user);
+                    var tokenObj = await GetJwtTokenUsingRefreshToken(dto);
+                    await SetToken(dto.Options, tokenObj);
                     goto up;
                 }
 
@@ -100,16 +101,16 @@ namespace RestMiddleware.Src
         {
             MergeOptions(dto.Options);
         up:;
-            using (System.Net.Http.HttpClient client = CreateClient(dto.Options))
+            using (System.Net.Http.HttpClient client = await CreateClientAsync(dto.Options))
             {
 
                 AddMultipartAsContentType(client);
                 AddRequestHeaders(client, dto.Headers);
-                System.Net.Http.HttpResponseMessage responseMessage = await client.PostAsMultipartAsync(url: dto.endpoint, content: dto.content);
-                if (IsUnauthorised(responseMessage))
+                System.Net.Http.HttpResponseMessage responseMessage = await client.PostAsMultipartAsync(url: dto.endpoint, content: dto.content, cancellationToken: dto.CancellationToken);
+                if (dto.Options.FetchRefreshTokenIfUnauthorised && IsUnauthorised(responseMessage))
                 {
-                    var user = await GetJwtTokenUsingRefreshToken(dto);
-                    dto.Options.MethodToSetTokenLocally(user);
+                    var tokenObj = await GetJwtTokenUsingRefreshToken(dto);
+                    await SetToken(dto.Options, tokenObj);
                     goto up;
                 }
 
@@ -135,16 +136,16 @@ namespace RestMiddleware.Src
         {
             MergeOptions(dto.Options);
         up:;
-            using (var client = CreateClient(dto.Options))
+            using (var client = await CreateClientAsync(dto.Options))
             {
 
                 AddJsonAsContentType(client);
                 AddRequestHeaders(client, dto.Headers);
-                System.Net.Http.HttpResponseMessage responseMessage = await client.PostAsJsonAsync(dto.endpoint, dto.data);
-                if (IsUnauthorised(responseMessage))
+                System.Net.Http.HttpResponseMessage responseMessage = await client.PostAsJsonAsync(dto.endpoint, dto.data, dto.CancellationToken);
+                if (dto.Options.FetchRefreshTokenIfUnauthorised && IsUnauthorised(responseMessage))
                 {
-                    var user = await GetJwtTokenUsingRefreshToken(dto);
-                    dto.Options.MethodToSetTokenLocally(user);
+                    var tokenObj = await GetJwtTokenUsingRefreshToken(dto);
+                    await SetToken(dto.Options, tokenObj);
                     goto up;
                 }
                 var responseDetail = await GetResponseObject(responseMessage, dto.Options);
@@ -171,16 +172,16 @@ namespace RestMiddleware.Src
         {
             MergeOptions(dto.Options);
         up:;
-            using (var client = CreateClient(dto.Options))
+            using (var client = await CreateClientAsync(dto.Options))
             {
                 AddJsonAsContentType(client);
                 client.MaxResponseContentBufferSize = 2147483647;
                 AddRequestHeaders(client, dto.Headers);
-                System.Net.Http.HttpResponseMessage responseMessage = await client.GetAsync($"{dto.endpoint}?{dto.query}");
-                if (IsUnauthorised(responseMessage))
+                System.Net.Http.HttpResponseMessage responseMessage = await client.GetAsync($"{dto.endpoint}?{dto.query}", dto.CancellationToken);
+                if (dto.Options.FetchRefreshTokenIfUnauthorised && IsUnauthorised(responseMessage))
                 {
-                    var user = await GetJwtTokenUsingRefreshToken(dto);
-                    dto.Options.MethodToSetTokenLocally(user);
+                    var tokenObj = await GetJwtTokenUsingRefreshToken(dto);
+                    await SetToken(dto.Options, tokenObj);
                     goto up;
                 }
                 var responseDetail = await GetResponseObject(responseMessage, dto.Options);
@@ -205,16 +206,16 @@ namespace RestMiddleware.Src
         {
             MergeOptions(dto.Options);
         up:;
-            using (var client = CreateClient(dto.Options))
+            using (var client = await CreateClientAsync(dto.Options))
             {
 
                 AddJsonAsContentType(client);
                 AddRequestHeaders(client, dto.Headers);
-                System.Net.Http.HttpResponseMessage responseMessage = await client.GetAsync($"{dto.endpoint}?{dto.query}");
-                if (IsUnauthorised(responseMessage))
+                System.Net.Http.HttpResponseMessage responseMessage = await client.GetAsync($"{dto.endpoint}?{dto.query}", dto.CancellationToken);
+                if (dto.Options.FetchRefreshTokenIfUnauthorised && IsUnauthorised(responseMessage))
                 {
-                    var user = await GetJwtTokenUsingRefreshToken(dto);
-                    dto.Options.MethodToSetTokenLocally(user);
+                    var tokenObj = await GetJwtTokenUsingRefreshToken(dto);
+                    await SetToken(dto.Options, tokenObj);
                     goto up;
                 }
                 var responseObject = await GetResponseObject(responseMessage, dto.Options);
@@ -239,16 +240,16 @@ namespace RestMiddleware.Src
         {
             MergeOptions(dto.Options);
         up:;
-            using (var client = CreateClient(dto.Options))
+            using (var client = await CreateClientAsync(dto.Options))
             {
 
                 AddJsonAsContentType(client);
                 AddRequestHeaders(client, dto.Headers);
-                System.Net.Http.HttpResponseMessage responseMessage = await client.GetAsync($"{dto.endpoint}?{dto.query}");
-                if (IsUnauthorised(responseMessage))
+                System.Net.Http.HttpResponseMessage responseMessage = await client.GetAsync($"{dto.endpoint}?{dto.query}", dto.CancellationToken);
+                if (dto.Options.FetchRefreshTokenIfUnauthorised && IsUnauthorised(responseMessage))
                 {
-                    var user = await GetJwtTokenUsingRefreshToken(dto);
-                    dto.Options.MethodToSetTokenLocally(user);
+                    var tokenObj = await GetJwtTokenUsingRefreshToken(dto);
+                    await SetToken(dto.Options, tokenObj);
                     goto up;
                 }
 
@@ -274,16 +275,16 @@ namespace RestMiddleware.Src
         {
             MergeOptions(dto.Options);
         up:;
-            using (var client = CreateClient(dto.Options))
+            using (var client = await CreateClientAsync(dto.Options))
             {
 
                 AddJsonAsContentType(client);
                 AddRequestHeaders(client, dto.Headers);
-                System.Net.Http.HttpResponseMessage responseMessage = await client.DeleteAsync($"{dto.endpoint}?{dto.query}");
-                if (IsUnauthorised(responseMessage))
+                System.Net.Http.HttpResponseMessage responseMessage = await client.DeleteAsync($"{dto.endpoint}?{dto.query}", dto.CancellationToken);
+                if (dto.Options.FetchRefreshTokenIfUnauthorised && IsUnauthorised(responseMessage))
                 {
-                    var user = await GetJwtTokenUsingRefreshToken(dto);
-                    dto.Options.MethodToSetTokenLocally(user);
+                    var tokenObj = await GetJwtTokenUsingRefreshToken(dto);
+                    await SetToken(dto.Options, tokenObj);
                     goto up;
                 }
                 var responseObject = await GetResponseObject(responseMessage, dto.Options);
@@ -291,10 +292,10 @@ namespace RestMiddleware.Src
             }
         }
 
-        private System.Net.Http.HttpClient CreateClient(Dto.HttpRequestOptions options)
+        private async Task<System.Net.Http.HttpClient> CreateClientAsync(Dto.HttpRequestOptions options)
         {
             var client = _clientFactory.CreateClient("RestMiddleware");
-            HttpClientHelper.ConfigureHttpClient(client, options);
+            await HttpClientHelper.ConfigureHttpClient(client, options);
             return client;
         }
 
@@ -327,13 +328,16 @@ namespace RestMiddleware.Src
         protected async Task<object> GetJwtTokenUsingRefreshToken(HttpRequestBaseDto dto)
         {
             System.Net.Http.HttpResponseMessage responseMessage = new System.Net.Http.HttpResponseMessage();
-            using (var client = CreateClient(dto.Options))
+            using (var client = await CreateClientAsync(dto.Options))
             {
-                string jwt_token = dto.Options.MethodToGetToken();
+                string jwt_token = null;
+                if (dto.Options.MethodToGetTokenAsync != null) jwt_token = await dto.Options.MethodToGetTokenAsync();
+                else if (dto.Options.MethodToGetToken != null) jwt_token = dto.Options.MethodToGetToken();
+
                 responseMessage = await client.PostAsJsonAsync(dto.Options.MethodToGetRefreshTokenEndpoint(), new
                 {
                     jwt_token = jwt_token
-                });
+                }, dto.CancellationToken);
 
                 if (responseMessage.IsSuccessStatusCode)
                 {
@@ -348,6 +352,14 @@ namespace RestMiddleware.Src
         private bool IsUnauthorised(System.Net.Http.HttpResponseMessage responseMessage)
         {
             return responseMessage.StatusCode == System.Net.HttpStatusCode.Unauthorized;
+        }
+
+        private async Task SetToken(HttpRequestOptions options, object tokenObj)
+        {
+            if (options.MethodToSetTokenLocallyAsync != null)
+                await options.MethodToSetTokenLocallyAsync(tokenObj);
+            else
+                options.MethodToSetTokenLocally?.Invoke(tokenObj);
         }
 
         private async Task<HttpResponseDto> GetResponseObject(System.Net.Http.HttpResponseMessage responseMessage, HttpRequestOptions options)
